@@ -1741,6 +1741,7 @@ IOStatus DBImpl::CreateWAL(uint64_t log_file_num, uint64_t recycle_log_number,
   return io_s;
 }
 
+// TODO: 需要详细了解open操作
 Status DBImpl::Open(const DBOptions& db_options, const std::string& dbname,
                     const std::vector<ColumnFamilyDescriptor>& column_families,
                     std::vector<ColumnFamilyHandle*>* handles, DB** dbptr,
@@ -1772,6 +1773,7 @@ Status DBImpl::Open(const DBOptions& db_options, const std::string& dbname,
       paths.emplace_back(db_path.path);
     }
     for (auto& cf : column_families) {
+      // TODO: 不同cf的sst文件是相互独立的？？？
       for (auto& cf_path : cf.options.cf_paths) {
         paths.emplace_back(cf_path.path);
       }

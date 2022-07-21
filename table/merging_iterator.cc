@@ -177,6 +177,7 @@ class MergingIterator : public InternalIterator {
       minHeap_.replace_top(current_);
     } else {
       // current stopped being valid, remove it from the heap.
+      // 当前已停止有效，请将其从堆中删除。
       considerStatus(current_->status());
       minHeap_.pop();
     }

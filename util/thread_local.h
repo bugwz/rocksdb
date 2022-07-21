@@ -67,6 +67,7 @@ class ThreadLocalPtr {
 
   // Reset all thread local data to replacement, and return non-nullptr
   // data for all existing threads
+  // 将所有线程本地数据重置为替换，并为所有现有线程返回非nullptr数据
   void Scrape(autovector<void*>* ptrs, void* const replacement);
 
   using FoldFunc = std::function<void(void*, void*)>;

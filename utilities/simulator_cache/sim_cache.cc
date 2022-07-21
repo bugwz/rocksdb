@@ -343,6 +343,7 @@ class SimCacheImpl : public SimCache {
 }  // end anonymous namespace
 
 // For instrumentation purpose, use NewSimCache instead
+// 出于检测目的，请改用NewSimCache
 std::shared_ptr<SimCache> NewSimCache(std::shared_ptr<Cache> cache,
                                       size_t sim_capacity, int num_shard_bits) {
   LRUCacheOptions co;

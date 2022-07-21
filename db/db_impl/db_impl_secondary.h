@@ -71,6 +71,9 @@ class LogReaderContainer {
 // The secondary instance can be opened using `DB::OpenAsSecondary`. After
 // that, it can call `DBImplSecondary::TryCatchUpWithPrimary` to make best
 // effort attempts to catch up with the primary.
+// 辅助实例作为主实例共享对存储的访问。辅助服务器能够读取和重播清单和WAL文件中描述的更改，而无需与主服务器协调。
+// 可以使用“DB：：OpenAsSecondary”打开辅助实例。之后，它可以调用'DBImplSecondary：：TryCatchUpWithPrimary'，
+// 尽最大努力赶上primary。
 class DBImplSecondary : public DBImpl {
  public:
   DBImplSecondary(const DBOptions& options, const std::string& dbname,

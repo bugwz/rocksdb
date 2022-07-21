@@ -547,6 +547,7 @@ void CompactionJob::Prepare() {
   if (c->ShouldFormSubcompactions()) {
     {
       StopWatch sw(db_options_.clock, stats_, SUBCOMPACTION_SETUP_TIME);
+      // TODO: 支持sub-compaction的配置，加速L0到L1的compaction操作
       GenSubcompactionBoundaries();
     }
     assert(sizes_.size() == boundaries_.size() + 1);
@@ -718,6 +719,7 @@ Status CompactionJob::Run() {
   const uint64_t start_micros = db_options_.clock->NowMicros();
 
   // Launch a thread for each of subcompactions 1...num_threads-1
+  // 为每一个subcompactions 1 到 num_threads-1 各启动一个compaction线程
   std::vector<port::Thread> thread_pool;
   thread_pool.reserve(num_threads - 1);
   for (size_t i = 1; i < compact_->sub_compact_states.size(); i++) {
@@ -1299,6 +1301,7 @@ void CompactionJob::NotifyOnSubcompactionCompleted(
 #endif  // ROCKSDB_LITE
 }
 
+// TODO: 实际执行compaction的任务
 void CompactionJob::ProcessKeyValueCompaction(SubcompactionState* sub_compact) {
   assert(sub_compact);
   assert(sub_compact->compaction);
@@ -1344,6 +1347,7 @@ void CompactionJob::ProcessKeyValueCompaction(SubcompactionState* sub_compact) {
 
   // TODO: since we already use C++17, should use
   // std::optional<const Slice> instead.
+  // TODO: 这里两个const的意义？
   const Slice* const start = sub_compact->start;
   const Slice* const end = sub_compact->end;
 
@@ -1365,6 +1369,7 @@ void CompactionJob::ProcessKeyValueCompaction(SubcompactionState* sub_compact) {
 
   // Although the v2 aggregator is what the level iterator(s) know about,
   // the AddTombstones calls will be propagated down to the v1 aggregator.
+  // 尽管v2聚合器是级别迭代器所知道的，但AddTombstones调用将向下传播到v1聚合器。
   std::unique_ptr<InternalIterator> raw_input(versions_->MakeInputIterator(
       read_options, sub_compact->compaction, &range_del_agg,
       file_options_for_read_,
@@ -1500,6 +1505,7 @@ void CompactionJob::ProcessKeyValueCompaction(SubcompactionState* sub_compact) {
           : sub_compact->compaction->CreateSstPartitioner();
   std::string last_key_for_partitioner;
 
+  // 遍历key，存储到新的sst文件中
   while (status.ok() && !cfd->IsDropped() && c_iter->Valid()) {
     // Invariant: c_iter.status() is guaranteed to be OK if c_iter->Valid()
     // returns true.

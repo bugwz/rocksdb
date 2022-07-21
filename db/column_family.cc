@@ -618,6 +618,7 @@ ColumnFamilyData::ColumnFamilyData(
 ColumnFamilyData::~ColumnFamilyData() {
   assert(refs_.load(std::memory_order_relaxed) == 0);
   // remove from linked list
+  // 从双向链表中删除对应的数据
   auto prev = prev_;
   auto next = next_;
   prev->next_ = next;
@@ -1207,6 +1208,10 @@ SuperVersion* ColumnFamilyData::GetThreadLocalSuperVersion(DBImpl* db) {
   // (2) the Swap above (always) installs kSVInUse, ThreadLocal storage
   // should only keep kSVInUse before ReturnThreadLocalSuperVersion call
   // (if no Scrape happens).
+  // 不变的：
+  // （1） Scrape（总是）在ThreadLocal存储中安装kSVObsolete
+  // （2） 上述交换（总是）安装kSVInUse，ThreadLocal存储只应在
+  //       returnthreadlocalsupersversion调用之前保留kSVInUse（如果没有发生刮取）。
   assert(ptr != SuperVersion::kSVInUse);
   SuperVersion* sv = static_cast<SuperVersion*>(ptr);
   if (sv == SuperVersion::kSVObsolete ||
@@ -1280,6 +1285,8 @@ void ColumnFamilyData::InstallSuperVersion(
     // This should be done before old_superversion->Unref(). That's to ensure
     // that local_sv_ never holds the last reference to SuperVersion, since
     // it has no means to safely do SuperVersion cleanup.
+    // 重置线程本地存储中缓存的超级版本。这应该在 old_superversion->Unref（） 之前完成。
+    // 这是为了确保 local_sv_ 从不保留对超级版本的最后一个引用，因为它无法安全地执行超级版本清理。
     ResetThreadLocalSuperVersions();
 
     if (old_superversion->mutable_cf_options.write_buffer_size !=
@@ -1525,6 +1532,7 @@ ColumnFamilyData* ColumnFamilySet::GetColumnFamily(const std::string& name)
 }
 
 uint32_t ColumnFamilySet::GetNextColumnFamilyID() {
+  // 自增id并返回
   return ++max_column_family_;
 }
 
@@ -1539,10 +1547,16 @@ size_t ColumnFamilySet::NumberOfColumnFamilies() const {
 }
 
 // under a DB mutex AND write thread
+// 在DB互斥锁和写线程下
+// 主要做了下面三件事情：
+//    1. 创建ColumnFamilyData对象
+//    2. 将新的创建好的CFD加入到双向链表
+//    3. 对应的Map数据结构更新数据
 ColumnFamilyData* ColumnFamilySet::CreateColumnFamily(
     const std::string& name, uint32_t id, Version* dummy_versions,
     const ColumnFamilyOptions& options) {
   assert(column_families_.find(name) == column_families_.end());
+  // 创建ColumnFamilyData对象
   ColumnFamilyData* new_cfd = new ColumnFamilyData(
       id, name, dummy_versions, table_cache_, write_buffer_manager_, options,
       *db_options_, &file_options_, this, block_cache_tracer_, io_tracer_,
@@ -1551,6 +1565,7 @@ ColumnFamilyData* ColumnFamilySet::CreateColumnFamily(
   column_family_data_.insert({id, new_cfd});
   max_column_family_ = std::max(max_column_family_, id);
   // add to linked list
+  // 将新的创建好的CFD加入到双向链表
   new_cfd->next_ = dummy_cfd_;
   auto prev = dummy_cfd_->prev_;
   new_cfd->prev_ = prev;
@@ -1563,6 +1578,10 @@ ColumnFamilyData* ColumnFamilySet::CreateColumnFamily(
 }
 
 // under a DB mutex AND from a write thread
+// 在DB互斥体下和写入线程
+// 从两个Map中删除对应的ColumnFamily
+// 由于ColumnFamilyData是通过引用计数管理的，因此只有当所有的引用计数都清零之后，
+// 才需要真正的函数ColumnFamilyData(也就是会从双向链表中删除数据)
 void ColumnFamilySet::RemoveColumnFamily(ColumnFamilyData* cfd) {
   auto cfd_iter = column_family_data_.find(cfd->GetID());
   assert(cfd_iter != column_family_data_.end());

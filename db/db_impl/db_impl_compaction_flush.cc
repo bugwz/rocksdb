@@ -61,6 +61,7 @@ bool DBImpl::EnoughRoomForCompaction(
   return enough_room;
 }
 
+// TODO: 主要用作限制compaction执行的并发数量？
 bool DBImpl::RequestCompactionToken(ColumnFamilyData* cfd, bool force,
                                     std::unique_ptr<TaskLimiterToken>* token,
                                     LogBuffer* log_buffer) {
@@ -2557,6 +2558,7 @@ ColumnFamilyData* DBImpl::PickCompactionFromQueue(
     auto first_cfd = *compaction_queue_.begin();
     compaction_queue_.pop_front();
     assert(first_cfd->queued_for_compaction());
+    // TODO: 为什么要请求token？
     if (!RequestCompactionToken(first_cfd, false, token, log_buffer)) {
       throttled_candidates.push_back(first_cfd);
       continue;
@@ -2565,6 +2567,7 @@ ColumnFamilyData* DBImpl::PickCompactionFromQueue(
     cfd->set_queued_for_compaction(false);
     break;
   }
+  // 按照原始的顺序写入compaction_queue_中
   // Add throttled compaction candidates back to queue in the original order.
   for (auto iter = throttled_candidates.rbegin();
        iter != throttled_candidates.rend(); ++iter) {
@@ -3126,10 +3129,13 @@ Status DBImpl::BackgroundCompaction(bool* made_progress,
       return Status::OK();
     }
 
+    // 尝试拿到一个可以执行的compaction任务，受限于compation的limitor
     auto cfd = PickCompactionFromQueue(&task_token, log_buffer);
     if (cfd == nullptr) {
       // Can't find any executable task from the compaction queue.
+      // 从压缩队列中找不到任何可以执行的任务
       // All tasks have been throttled by compaction thread limiter.
+      // 所有任务都已被压缩线程限制器限制。
       ++unscheduled_compactions_;
       return Status::Busy();
     }
@@ -3379,6 +3385,7 @@ Status DBImpl::BackgroundCompaction(bool* made_progress,
     TEST_SYNC_POINT_CALLBACK(
         "DBImpl::BackgroundCompaction:NonTrivial:BeforeRun", nullptr);
     // Should handle erorr?
+    // TODO: 执行主要的compaction任务
     compaction_job.Run().PermitUncheckedError();
     TEST_SYNC_POINT("DBImpl::BackgroundCompaction:NonTrivial:AfterRun");
     mutex_.Lock();

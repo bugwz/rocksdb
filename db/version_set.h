@@ -1413,6 +1413,7 @@ class VersionSet {
   std::atomic<uint64_t> next_file_number_;
   // Any WAL number smaller than this should be ignored during recovery,
   // and is qualified for being deleted.
+  // 任何小于此值的WAL编号都应在恢复过程中忽略，并符合删除条件。
   std::atomic<uint64_t> min_log_number_to_keep_ = {0};
   uint64_t manifest_file_number_;
   uint64_t options_file_number_;
@@ -1421,18 +1422,22 @@ class VersionSet {
   // The last seq visible to reads. It normally indicates the last sequence in
   // the memtable but when using two write queues it could also indicate the
   // last sequence in the WAL visible to reads.
+  // 读取可见的最后一个序列。它通常指示memtable中的最后一个序列，但当使用两个写入队列时，它也可以指示WAL中对读取可见的最后一个序列。
   std::atomic<uint64_t> last_sequence_;
   // The last sequence number of data committed to the descriptor (manifest
   // file).
+  // 提交到描述符的最后一个数据序列号（manifest文件）
   SequenceNumber descriptor_last_sequence_ = 0;
   // The last seq that is already allocated. It is applicable only when we have
   // two write queues. In that case seq might or might not have appreated in
   // memtable but it is expected to appear in the WAL.
+  // 已分配的最后一个序列。只有当我们有两个写队列时，它才适用。在这种情况下，seq可能会也可能不会在memtable中通知，但预计会出现在WAL中。
   // We have last_sequence <= last_allocated_sequence_
   std::atomic<uint64_t> last_allocated_sequence_;
   // The last allocated sequence that is also published to the readers. This is
   // applicable only when last_seq_same_as_publish_seq_ is not set. Otherwise
   // last_sequence_ also indicates the last published seq.
+  // 最后分配给读者的序列。仅当未设置last_seq_same_as_publish_seq_时，此选项才适用。否则，last_sequence_还表示最后发布的序列。
   // We have last_sequence <= last_published_sequence_ <=
   // last_allocated_sequence_
   std::atomic<uint64_t> last_published_sequence_;
@@ -1455,11 +1460,13 @@ class VersionSet {
   std::vector<std::string> obsolete_manifests_;
 
   // env options for all reads and writes except compactions
+  // 用于除压缩以外的所有读取和写入的env选项
   FileOptions file_options_;
 
   BlockCacheTracer* const block_cache_tracer_;
 
   // Store the IO status when Manifest is written
+  // 写入 Manifest时存储IO状态
   IOStatus io_status_;
 
   std::shared_ptr<IOTracer> io_tracer_;

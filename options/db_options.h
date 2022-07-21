@@ -27,6 +27,8 @@ struct ImmutableDBOptions {
   bool flush_verify_memtable_count;
   bool track_and_verify_wals_in_manifest;
   Env* env;
+  // 确保在一个进程的所有数据库中使用同一个rate_limiter对象。
+  // TODO: std::shared_ptr ？
   std::shared_ptr<RateLimiter> rate_limiter;
   std::shared_ptr<SstFileManager> sst_file_manager;
   std::shared_ptr<Logger> info_log;

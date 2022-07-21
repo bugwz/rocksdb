@@ -297,6 +297,7 @@ struct ColumnFamilyOptions : public AdvancedColumnFamilyOptions {
   //
   // If left empty, db_paths will be used.
   // Default: empty
+  // 此列族的SST文件可以放入的路径列表，以及其目标大小。类似于db_路径，
   std::vector<DbPath> cf_paths;
 
   // Compaction concurrent thread limiter for the column family.
@@ -767,6 +768,7 @@ struct DBOptions {
 
   // Allow the OS to mmap file for reading sst tables.
   // Not recommended for 32-bit OS.
+  // 允许操作系统使用mmap文件读取sst表。不建议用于32位操作系统。
   // Default: false
   bool allow_mmap_reads = false;
 
@@ -887,6 +889,7 @@ struct DBOptions {
 
   // Specify the file access pattern once a compaction is started.
   // It will be applied to all input files of a compaction.
+  // 一旦开始压缩，请指定文件访问模式。它将应用于压缩的所有输入文件。
   // Default: NORMAL
   enum AccessHint { NONE, NORMAL, SEQUENTIAL, WILLNEED };
   AccessHint access_hint_on_compaction_start = NORMAL;

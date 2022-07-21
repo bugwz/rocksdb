@@ -230,6 +230,8 @@ struct SuperVersion {
   // by thread. This way, the value of kSVInUse is guaranteed to have no
   // conflict with SuperVersion object address and portable on different
   // platform.
+  // 实际未使用dummy的值。kSVInUse将其地址作为线程本地存储中的标记，以指示线程正在使用超级版本。
+  // 这样，可以保证kSVInUse的值与SuperVersion对象地址没有冲突，并且可以在不同的平台上移植。
   static int dummy;
   static void* const kSVInUse;
   static void* const kSVObsolete;
@@ -579,6 +581,8 @@ class ColumnFamilyData {
   // pointers for a circular linked list. we use it to support iterations over
   // all column families that are alive (note: dropped column families can also
   // be alive as long as client holds a reference)
+  // 循环链表的指针。我们使用它来支持对所有活动列族的迭代（注意：只要客户端持有引用，删除的列族也可以活动）
+  // 双向链表
   ColumnFamilyData* next_;
   ColumnFamilyData* prev_;
 
@@ -636,6 +640,13 @@ class ColumnFamilyData {
 // * GetColumnFamily() -- either inside of DB mutex or from a write thread
 // * GetNextColumnFamilyID(), GetMaxColumnFamily(), UpdateMaxColumnFamily(),
 // NumberOfColumnFamilies -- inside of DB mutex
+// ColumnFamilySet 具有有趣的线程安全要求
+// CreateColumnFamily() 或者 RemoveColumnFamily() 需要由DB互斥体保护，并在写线程中执行。
+// CreateColumnFamily() 应该只能被 VersionSet::LogAndApply() 和 单写线程调用。它也可以
+// 在恢复期间和 DumpManifest() 中调用。
+// RemoveColumnFamily() 只能被 SetDropped() 调用。DB互斥体需要保持，并且需要从写线程执行。
+// SetDropped() 还保证只能从单线程 LogAndApply() 调用它，但这个条件并不那么重要。
+// ......
 class ColumnFamilySet {
  public:
   // ColumnFamilySet supports iteration
@@ -707,11 +718,14 @@ class ColumnFamilySet {
   // 1. DB mutex locked
   // 2. accessed from a single-threaded write thread
   UnorderedMap<std::string, uint32_t> column_families_;
+  // 一个map，保存Column Family名字和对应的id以及ColumnFamilyData的映射
+  // RocksDB内部是将没一个ColumnFamily的名字表示为一个uint32类型的ID，这个ID是一个简单的递增的数值
   UnorderedMap<uint32_t, ColumnFamilyData*> column_family_data_;
 
   uint32_t max_column_family_;
   const FileOptions file_options_;
 
+  // 一个双向链表，其中dummy：傀儡，虚设者
   ColumnFamilyData* dummy_cfd_;
   // We don't hold the refcount here, since default column family always exists
   // We are also not responsible for cleaning up default_cfd_cache_. This is

@@ -2361,6 +2361,8 @@ class DBImpl : public DB {
   // Number of running IngestExternalFile() or CreateColumnFamilyWithImport()
   // calls.
   // REQUIRES: mutex held
+  // 运行InGesterExternalFile（）或CreateColumnFamilyWithImport（）调用的次数。
+  // 需要：互斥锁
   int num_running_ingest_file_;
 
 #ifndef ROCKSDB_LITE

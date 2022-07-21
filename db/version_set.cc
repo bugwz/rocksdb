@@ -5884,6 +5884,7 @@ InternalIterator* VersionSet::MakeInputIterator(
     }
   }
   assert(num <= space);
+  // TODO: 此处建立了一个小顶堆
   InternalIterator* result =
       NewMergingIterator(&c->column_family_data()->internal_comparator(), list,
                          static_cast<int>(num));
