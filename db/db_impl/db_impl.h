@@ -2405,6 +2405,8 @@ class DBImpl : public DB {
 
   // When set, we use a separate queue for writes that don't write to memtable.
   // In 2PC these are the writes at Prepare phase.
+  // 设置后，我们对不写入memtable的写入使用单独的队列。
+  // 在2PC中，这些是准备阶段的写入。
   const bool two_write_queues_;
   const bool manual_wal_flush_;
 

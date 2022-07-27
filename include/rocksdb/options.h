@@ -1068,6 +1068,8 @@ struct DBOptions {
   // if you are going to use this feature.
   //
   // Default: true
+  // 开启后，允许多个writer并发写memtable
+  // 默认开启
   bool allow_concurrent_memtable_write = true;
 
   // If true, threads synchronizing with the write batch group leader will
@@ -1667,6 +1669,7 @@ struct WriteOptions {
   // it introduces minimum impacts to high priority writes.
   //
   // Default: false
+  // 如果开启，则写请求拥有较低的优先级
   bool low_pri;
 
   // If true, this writebatch will maintain the last insert positions of each
@@ -1691,6 +1694,7 @@ struct WriteOptions {
   // due to implementation constraints.
   //
   // Default: `Env::IO_TOTAL`
+  // TODO: IO的限速策略是？？？
   Env::IOPriority rate_limiter_priority;
 
   WriteOptions()
@@ -1899,6 +1903,8 @@ struct TraceOptions {
   //
   // Default: false. This means write records in the trace may be in an order
   // different from the WAL's order.
+  // 这意味着在跟踪中写入记录的顺序可能与WAL的顺序不同。
+  // 保护写有序
   bool preserve_write_order = false;
 };
 

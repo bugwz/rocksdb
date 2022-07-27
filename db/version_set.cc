@@ -6004,16 +6004,21 @@ ColumnFamilyData* VersionSet::CreateColumnFamily(
   // Ref() dummy version once so that later we can call Unref() to delete it
   // by avoiding calling "delete" explicitly (~Version is private)
   dummy_versions->Ref();
+  // CreateColumnFamily 函数返回一个新的cf的handler
   auto new_cfd = column_family_set_->CreateColumnFamily(
       edit->column_family_name_, edit->column_family_, dummy_versions,
       cf_options);
 
+  // 针对于新的cf，我们创建了一个新的version
+  // TODO: 这里的创建的新的version的作用是？？？目的是？？？
   Version* v = new Version(new_cfd, this, file_options_,
                            *new_cfd->GetLatestMutableCFOptions(), io_tracer_,
                            current_version_number_++);
 
+  // TODO: constexpr 的含义是？？？
   constexpr bool update_stats = false;
 
+  // Mutable ： 可变的
   v->PrepareAppend(*new_cfd->GetLatestMutableCFOptions(), update_stats);
 
   AppendVersion(new_cfd, v);

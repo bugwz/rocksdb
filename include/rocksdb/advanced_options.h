@@ -312,6 +312,7 @@ struct AdvancedColumnFamilyOptions {
   //   * existing_value for that key is a put i.e. kTypeValue
   // If inplace_callback function is set, check doc for inplace_callback.
   // Default: false.
+  // 允许线程安全的原地更新。
   bool inplace_update_support = false;
 
   // Number of locks used for inplace update

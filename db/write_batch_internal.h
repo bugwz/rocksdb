@@ -68,6 +68,7 @@ class ColumnFamilyMemTablesDefault : public ColumnFamilyMemTables {
 struct WriteBatch::ProtectionInfo {
   // `WriteBatch` usually doesn't contain a huge number of keys so protecting
   // with a fixed, non-configurable eight bytes per key may work well enough.
+  // TODO: 没看懂
   autovector<ProtectionInfoKVOC64> entries_;
 
   size_t GetBytesPerKey() const { return 8; }
@@ -255,7 +256,10 @@ class LocalSavePoint {
 #ifndef NDEBUG
     committed_ = true;
 #endif
+    // 如果设置了batch的最大字节大小，并且当前batch的大小已经超过最大值
     if (batch_->max_bytes_ && batch_->rep_.size() > batch_->max_bytes_) {
+      // savepoint_ 的大小就是batch中数据的大小
+      // TODO: resize 是否会裁剪数据，如果新的大小比老的小会发生什么？
       batch_->rep_.resize(savepoint_.size);
       WriteBatchInternal::SetCount(batch_, savepoint_.count);
       if (batch_->prot_info_ != nullptr) {

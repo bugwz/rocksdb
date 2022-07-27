@@ -209,6 +209,7 @@ uint8_t WriteThread::AwaitState(Writer* w, uint8_t goal_mask,
 
 void WriteThread::SetState(Writer* w, uint8_t new_state) {
   assert(w);
+  // w->state 是一个原子变量
   auto state = w->state.load(std::memory_order_acquire);
   if (state == STATE_LOCKED_WAITING ||
       !w->state.compare_exchange_strong(state, new_state)) {
@@ -224,12 +225,16 @@ void WriteThread::SetState(Writer* w, uint8_t new_state) {
 bool WriteThread::LinkOne(Writer* w, std::atomic<Writer*>* newest_writer) {
   assert(newest_writer != nullptr);
   assert(w->state == STATE_INIT);
+  // 获取最新的一个writer
   Writer* writers = newest_writer->load(std::memory_order_relaxed);
   while (true) {
     // If write stall in effect, and w->no_slowdown is not true,
     // block here until stall is cleared. If its true, then return
     // immediately
+    // 如果写入暂停生效，并且 w->no_slowdown不为true，在这里阻塞，直到暂停被清除。
+    // 如果是真的，然后快速返回。
     if (writers == &write_stall_dummy_) {
+      // TODO: no_slowdown 的参数含义是？
       if (w->no_slowdown) {
         w->status = Status::Incomplete("Write stall");
         SetState(w, STATE_COMPLETED);
@@ -237,11 +242,13 @@ bool WriteThread::LinkOne(Writer* w, std::atomic<Writer*>* newest_writer) {
       }
       // Since no_slowdown is false, wait here to be notified of the write
       // stall clearing
+      // 如果 no_slowdown 是false，则等待着write stall被清除的通知
       {
         MutexLock lock(&stall_mu_);
         writers = newest_writer->load(std::memory_order_relaxed);
         if (writers == &write_stall_dummy_) {
           TEST_SYNC_POINT_CALLBACK("WriteThread::WriteStall::Wait", w);
+          // 等待通知
           stall_cv_.Wait();
           // Load newest_writers_ again since it may have changed
           writers = newest_writer->load(std::memory_order_relaxed);
@@ -250,6 +257,8 @@ bool WriteThread::LinkOne(Writer* w, std::atomic<Writer*>* newest_writer) {
       }
     }
     w->link_older = writers;
+    // C++11 CAS无锁函数compare_exchange_weak
+    // TODO: 判断是否是第一个writer
     if (newest_writer->compare_exchange_weak(writers, w)) {
       return (writers == nullptr);
     }
@@ -384,6 +393,7 @@ void WriteThread::JoinBatchGroup(Writer* w) {
 
   bool linked_as_leader = LinkOne(w, &newest_writer_);
 
+  // 如果是第一个writer，则将其设置为leader
   if (linked_as_leader) {
     SetState(w, STATE_GROUP_LEADER);
   }
@@ -404,6 +414,11 @@ void WriteThread::JoinBatchGroup(Writer* w) {
      * 3.2) an existing memtable writer group leader tell us to finish memtable
      *      writes in parallel.
      */
+    // 如果不是leader，则等待，直到以下情况发生
+    //    1. 一位现有的领导者选择我们作为新的领导者
+    //    2. 一位现任领导人选择我们作为跟随者，并且
+    //      2.1. 代表我们完成memtable写入
+    //      2.2. 或者告诉我们可以并发写memtable
     TEST_SYNC_POINT_CALLBACK("WriteThread::JoinBatchGroup:BeganWaiting", w);
     AwaitState(w, STATE_GROUP_LEADER | STATE_MEMTABLE_WRITER_LEADER |
                       STATE_PARALLEL_MEMTABLE_WRITER | STATE_COMPLETED,
@@ -615,6 +630,7 @@ bool WriteThread::CompleteParallelMemTableWriter(Writer* w) {
 
   if (write_group->running-- > 1) {
     // we're not the last one
+    // 我们不是最后一个，返回 false
     AwaitState(w, STATE_COMPLETED, &cpmtw_ctx);
     return false;
   }
@@ -709,6 +725,7 @@ void WriteThread::ExitAsBatchGroupLeader(WriteGroup& write_group,
       }
     }
 
+    // 设置下一层的leader
     if (next_leader != nullptr) {
       next_leader->link_older = nullptr;
       SetState(next_leader, STATE_GROUP_LEADER);

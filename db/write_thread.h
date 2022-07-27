@@ -60,6 +60,10 @@ class WriteThread {
     // parallel writer group, or one of the followers. The writer should then
     // apply its batch to the memtable concurrently and call
     // CompleteParallelMemTableWriter.
+    // 用于通知等待写入程序它已成为并行可存储写入程序的状态。
+    // 它可以成为这个组的领导者已控制这个组的并发写，或者成为一个跟随者。
+    // 然后，写的人应同时将其批处理应用于memtable并调用 CompleteParallelMemTableWriter
+    // 并发写memtable的状态
     STATE_PARALLEL_MEMTABLE_WRITER = 8,
 
     // A follower whose writes have been applied, or a parallel leader
@@ -115,7 +119,7 @@ class WriteThread {
   struct Writer {
     WriteBatch* batch;
     bool sync;
-    bool no_slowdown;
+    bool no_slowdown; // TODO: 含义？
     bool disable_wal;
     Env::IOPriority rate_limiter_priority;
     bool disable_memtable;
@@ -375,6 +379,7 @@ class WriteThread {
 
   // Points to the newest pending writer. Only leader can remove
   // elements, adding can be done lock-free by anybody.
+  // 指向最新的writer。只有领导者可以移除元素，添加对于任何人来说都是一个无锁的操作。
   std::atomic<Writer*> newest_writer_;
 
   // Points to the newest pending memtable writer. Used only when pipelined

@@ -36,6 +36,7 @@ class InternalKey;
 // data structures.
 // The highest bit of the value type needs to be reserved to SST tables
 // for them to do more flexible encoding.
+// 不同的value类型，部分数据不写memtable，只写wal
 enum ValueType : unsigned char {
   kTypeDeletion = 0x0,
   kTypeValue = 0x1,

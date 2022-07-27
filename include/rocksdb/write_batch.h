@@ -417,6 +417,7 @@ class WriteBatch : public WriteBatchBase {
   SavePoint wal_term_point_;
 
   // For HasXYZ.  Mutable to allow lazy computation of results
+  // TODO: 这个变量的作用是？没看懂 mutable 修饰符的含义是？ 多变的原子变量？
   mutable std::atomic<uint32_t> content_flags_;
 
   // Performs deferred computation of content_flags if necessary
@@ -431,6 +432,7 @@ class WriteBatch : public WriteBatchBase {
   // more details.
   bool is_latest_persistent_state_ = false;
 
+  // TODO: 保护信息？啥意思？
   std::unique_ptr<ProtectionInfo> prot_info_;
 
   size_t default_cf_ts_sz_ = 0;

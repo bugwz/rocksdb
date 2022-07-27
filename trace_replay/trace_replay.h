@@ -152,6 +152,7 @@ class Tracer {
 
   // Returns true if the order of write trace records must match the order of
   // the corresponding records logged to WAL and applied to the DB.
+  // 如果写入跟踪记录的顺序必须与记录到WAL并应用到DB的相应记录的顺序匹配，则返回true。
   bool IsWriteOrderPreserved() { return trace_options_.preserve_write_order; }
 
   // Writes a trace footer at the end of the tracing

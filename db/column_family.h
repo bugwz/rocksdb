@@ -542,6 +542,7 @@ class ColumnFamilyData {
 
   uint32_t id_;
   const std::string name_;
+  // dummy_versions_ 这里的也是一个双向链表
   Version* dummy_versions_;  // Head of circular doubly-linked list of versions.
   Version* current_;         // == dummy_versions->prev_
 
@@ -717,11 +718,19 @@ class ColumnFamilySet {
   // * when reading, at least one condition needs to be satisfied:
   // 1. DB mutex locked
   // 2. accessed from a single-threaded write thread
+  // column_families_ 和 column_family_data_ 需要被保护：
+  // 当变异时，必须满足两个条件：
+  //    1. DB互斥锁已经锁定
+  //    2. 当前处于单线程写线程中的线程
+  // 读取时，至少需要满足一个条件：
+  //    1. DB互斥锁已经锁定
+  //    2. 访问来自于一个单一的写线程
   UnorderedMap<std::string, uint32_t> column_families_;
   // 一个map，保存Column Family名字和对应的id以及ColumnFamilyData的映射
   // RocksDB内部是将没一个ColumnFamily的名字表示为一个uint32类型的ID，这个ID是一个简单的递增的数值
   UnorderedMap<uint32_t, ColumnFamilyData*> column_family_data_;
 
+  // 计算最大的cf的id
   uint32_t max_column_family_;
   const FileOptions file_options_;
 
@@ -731,6 +740,8 @@ class ColumnFamilySet {
   // We are also not responsible for cleaning up default_cfd_cache_. This is
   // just a cache that makes common case (accessing default column family)
   // faster
+  // 我们不持有引用计数，因为默认的cf一直都存在，我们也不负责清理 default_cfd_cache_ 。
+  // 这只是一个缓存来更快的处理常见情况（访问默认的cf的情况）。
   ColumnFamilyData* default_cfd_cache_;
 
   const std::string db_name_;

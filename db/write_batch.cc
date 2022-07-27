@@ -449,6 +449,7 @@ Status ReadRecordFromWriteBatch(Slice* input, char* tag,
   return Status::OK();
 }
 
+// Iterate : 迭代
 Status WriteBatch::Iterate(Handler* handler) const {
   if (rep_.size() < WriteBatchInternal::kHeader) {
     return Status::Corruption("malformed WriteBatch (too small)");
@@ -714,6 +715,7 @@ WriteBatchInternal::GetColumnFamilyIdAndTimestampSize(
   size_t ts_sz = 0;
   Status s;
   if (column_family) {
+    // 获取cf的比较器
     const Comparator* const ucmp = column_family->GetComparator();
     if (ucmp) {
       ts_sz = ucmp->timestamp_size();
@@ -724,6 +726,7 @@ WriteBatchInternal::GetColumnFamilyIdAndTimestampSize(
   } else if (b->default_cf_ts_sz_ > 0) {
     ts_sz = b->default_cf_ts_sz_;
   }
+  // 返回多种数据类型的元组，避免需要逐个指定元素类型的问题，自动化实现各个元素类型的推导
   return std::make_tuple(s, cf_id, ts_sz);
 }
 
@@ -775,6 +778,7 @@ Status WriteBatchInternal::Put(WriteBatch* b, uint32_t column_family_id,
     // (a missing/extra encoded CF ID would corrupt another field). It is
     // convenient to consolidate on `kTypeValue` here as that is what will be
     // inserted into memtable.
+    // TODO: 没看懂
     b->prot_info_->entries_.emplace_back(ProtectionInfo64()
                                              .ProtectKVO(key, value, kTypeValue)
                                              .ProtectC(column_family_id));
@@ -784,10 +788,12 @@ Status WriteBatchInternal::Put(WriteBatch* b, uint32_t column_family_id,
 
 Status WriteBatch::Put(ColumnFamilyHandle* column_family, const Slice& key,
                        const Slice& value) {
+  // ts_sz 用于带有时间相关kv属性
   size_t ts_sz = 0;
   uint32_t cf_id = 0;
   Status s;
 
+  // std::tie 返回含左值引用的 std::tuple 对象
   std::tie(s, cf_id, ts_sz) =
       WriteBatchInternal::GetColumnFamilyIdAndTimestampSize(this,
                                                             column_family);
@@ -2562,6 +2568,7 @@ Status WriteBatchInternal::InsertInto(
   return Status::OK();
 }
 
+// TODO: 并发写memtable的原理是如何？？？memtable为什么支持并发写？？？
 Status WriteBatchInternal::InsertInto(
     WriteThread::Writer* writer, SequenceNumber sequence,
     ColumnFamilyMemTables* memtables, FlushScheduler* flush_scheduler,
@@ -2572,6 +2579,7 @@ Status WriteBatchInternal::InsertInto(
 #ifdef NDEBUG
   (void)batch_cnt;
 #endif
+  // 外部有判断，这里一定是成立，否则就是异常
   assert(writer->ShouldWriteToMemtable());
   MemTableInserter inserter(sequence, memtables, flush_scheduler,
                             trim_history_scheduler,
@@ -2585,6 +2593,7 @@ Status WriteBatchInternal::InsertInto(
   Status s = writer->batch->Iterate(&inserter);
   assert(!seq_per_batch || batch_cnt != 0);
   assert(!seq_per_batch || inserter.sequence() - sequence == batch_cnt);
+  // 如果允许并发写
   if (concurrent_memtable_writes) {
     inserter.PostProcess();
   }

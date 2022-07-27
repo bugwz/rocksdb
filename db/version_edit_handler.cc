@@ -181,6 +181,7 @@ Status VersionEditHandler::Initialize() {
       VersionEdit default_cf_edit;
       default_cf_edit.AddColumnFamily(kDefaultColumnFamilyName);
       default_cf_edit.SetColumnFamily(0);
+      // 这里只是创建并初始化默认的cf
       ColumnFamilyData* cfd =
           CreateCfAndInit(default_cf_iter->second, default_cf_edit);
       assert(cfd != nullptr);
@@ -196,6 +197,7 @@ Status VersionEditHandler::Initialize() {
 Status VersionEditHandler::ApplyVersionEdit(VersionEdit& edit,
                                             ColumnFamilyData** cfd) {
   Status s;
+  // 如果是新增的cf的操作
   if (edit.is_column_family_add_) {
     s = OnColumnFamilyAdd(edit, cfd);
   } else if (edit.is_column_family_drop_) {

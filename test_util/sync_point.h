@@ -159,6 +159,7 @@ void SetupSyncPointsToMockDirectIO();
 #define TEST_IDX_SYNC_POINT(x, index)                      \
   ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->Process(x + \
                                                        std::to_string(index))
+// TODO: SyncPoint 指的是什么？
 #define TEST_SYNC_POINT_CALLBACK(x, y) \
   ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->Process(x, y)
 #define INIT_SYNC_POINT_SINGLETONS() \
